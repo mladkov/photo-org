@@ -36,8 +36,6 @@ def main(argv):
     for filename in glob.iglob(srcPath + '**/*', recursive=True):
         fName, extension = path.splitext(filename)
         if extension is not None and len(extension) != 0 and extension in ('.jpg', '.JPG', '.jpeg', '.JPEG'):
-            
-
             # Found a file - let's get the exif data from it
             f = open(filename, 'rb')
             tags = exifread.process_file(f)
