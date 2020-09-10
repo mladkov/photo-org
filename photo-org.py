@@ -37,12 +37,12 @@ def main(argv):
         fName, extension = path.splitext(filename)
         if extension is not None and len(extension) != 0 and extension in ('.jpg', '.JPG', '.jpeg', '.JPEG'):
             # Found a file - let's get the exif data from it
-            f = open(filename, 'rb')
-            tags = exifread.process_file(f)
-            origDtm = tags["EXIF DateTimeOriginal"]
-            fmtDtm = formatDateTime(str(origDtm))
-            stdPath = getPathFromDate(trgPath, str(origDtm))
-            model = tags["Image Model"]
+            f        = open(filename, 'rb')
+            tags     = exifread.process_file(f)
+            origDtm  = tags["EXIF DateTimeOriginal"]
+            fmtDtm   = formatDateTime(str(origDtm))
+            stdPath  = getPathFromDate(trgPath, str(origDtm))
+            model    = tags["Image Model"]
             fmtModel = formatModel(str(model))
             baseFilename, extension = path.splitext(path.basename(filename))
             fmtBaseFilename = baseFilename.lower().replace(" ", "-")
