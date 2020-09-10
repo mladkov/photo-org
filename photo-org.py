@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Needs Python 3.5 or above
+# Tested with Python 3.8 or above
 
 import sys
 import glob
@@ -58,7 +58,7 @@ def main(argv):
             print(f"FROM : {filename}")
             print(f"TO   : {newFilename}\n")
             shutil.move(filename, newFilename)
-            
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(f"{HELP_MESSAGE}  num args = {len(sys.argv)}")
