@@ -10,6 +10,7 @@ import exifread
 import shutil
 import subprocess
 import hashlib
+from send2trash import send2trash
 
 HELP_MESSAGE = "./photo-org.py <source-path> <target-path>"
 DEBUG_MODE = False
@@ -18,6 +19,7 @@ class ExifProcessor:
     def __init__(self, filename):
         self.filename = filename
         self.uniq_id  = 0
+        self.tags = {}
     
     def process_exif(self):
         self.filename_prefix, self.extension = path.splitext(self.filename)
@@ -50,6 +52,17 @@ class ExifProcessor:
                             date_time = line[34:53]
                             self.tags['EXIF DateTimeOriginal'] = date_time.strip()
                 f.close()
+            except ValueError as ve:
+                # Value error means we couldn't even recognize values when doing the
+                # parsing, so we reesort to using ExifTool
+                self.tags['Image Model'] = 'unknown'
+                print(f"  WARN: ValueError during parse {ve}, using ExifTool instead!")
+                exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe', 
+                        self.filename], stdout=subprocess.PIPE, encoding='UTF-8')
+                for line in exiftool_res.stdout.splitlines():
+                    if line.startswith('File Modification Date'):
+                        date_time = line[34:53]
+                        self.tags['EXIF DateTimeOriginal'] = date_time.strip()
             except Exception as e:
                 print("Exception processing Exif in file [{}]: {}".format(self.filename, e))
                 raise e
@@ -66,6 +79,7 @@ class ExifProcessor:
         """
         #print("  Available tags: {}".format(self.tags.keys()))
         origDtm  = self.tags["EXIF DateTimeOriginal"]
+        print(f"EXIF DateTimeOriginal: {origDtm}")
         fmtDtm   = self._format_dtm(str(origDtm))
         stdPath  = self._get_path_from_date(target_path, str(origDtm))
         model    = self.tags["Image Model"]
@@ -92,13 +106,21 @@ class ExifProcessor:
         return False
 
     def _format_dtm(self, orig_dtm):
-        theDate, theTime = orig_dtm.split(" ")
+        # Some bad data had shown this for the time:
+        # 2007:09:07 15:17: 6
+        # Notice the blank between the last ':' and the '6'.
+        # That means we'll just do our best instead to pull out the time
+        # from the hour/minute and ignore seconds.
+        dtm_fields = orig_dtm.split(" ")
+        theDate = dtm_fields[0]
+        theTime = dtm_fields[1]
         fmtDate = theDate.replace(":", "")
         fmtTime = theTime.replace(":", "")
         return fmtDate + "-" + fmtTime
 
     def _get_path_from_date(self, rootDir, origDtm):
-        theDate, theTime = origDtm.split(" ")
+        dtm_fields = origDtm.split(" ")
+        theDate = dtm_fields[0]
         theYear, theMonth, theDay = theDate.split(":")
         return path.join(rootDir, theYear, theMonth, theDay)
 
@@ -117,47 +139,48 @@ def main(argv):
         sys.exit(1)
     
     for filename in glob.iglob(srcPath + '/**/*', recursive=True):
+        sent_to_trash = False
         #print(f"Listing: {filename}")
         if not path.isdir(filename):
             # Only try processing items that are NOT directories (ie. files!)
             print("Found file: {}".format(filename))
             exif_proc = ExifProcessor(filename)
-            exif_proc.process_exif()
-            new_filename = exif_proc.get_target_path(trgPath)
-            # Check if the new file name already exists
-            if path.isfile(new_filename):
-                #print (f"  Uh-oh, target filename already exists. Checking if checksums match")
-                sha256_hash = hashlib.sha256()
-                sha256_hash2 = hashlib.sha256()
-                with open(filename,"rb") as f:
-                    # Read and update hash string value in blocks of 4K
-                    for byte_block in iter(lambda: f.read(4096),b""):
-                        sha256_hash.update(byte_block)
-                    #print(f"Original file: {sha256_hash.hexdigest()}")
-                with open(new_filename,"rb") as f2:
-                    # Read and update hash string value in blocks of 4K
-                    for byte_block in iter(lambda: f2.read(4096),b""):
-                        sha256_hash2.update(byte_block)
-                    #print(f"New file     : {sha256_hash2.hexdigest()}")
-                if sha256_hash.hexdigest() != sha256_hash2.hexdigest():
-                    #print(f"  Checksums do not match, generating uniq name")
-                    while path.isfile(new_filename):
-                        new_filename = exif_proc.get_next_uniq_target_path(trgPath)
-                    print(f"  New uniq name found: {new_filename}")
-                else:
-                    # Means files are identical, so instead of re-copying,
-                    # we'll move it into our special Pictures trash
-                    print(f"  Moving file instead to the to-be-deleted pile")
-                    trash_folder = path.join(path.dirname(filename), "to-be-deleted")
-                    new_filename = path.join(trash_folder, path.basename(filename))
-                    if not path.isdir(trash_folder):
-                        print(f"Creating trash folder: {trash_folder}")
-                        os.makedirs(trash_folder)
-                    print(f"  Moving to trash as file already exists: {new_filename}")
-            print(f"  FROM : {filename} --> TO: {new_filename}")
-            print("")
-            # TODO: Trash needs to be OUTSIDE of source directory because of globbing
-            #shutil.move(filename, new_filename)
+            try:
+                exif_proc.process_exif()
+                new_filename = exif_proc.get_target_path(trgPath)
+                # Check if the new file name already exists
+                if path.isfile(new_filename):
+                    #print (f"  Uh-oh, target filename already exists. Checking if checksums match")
+                    sha256_hash = hashlib.sha256()
+                    sha256_hash2 = hashlib.sha256()
+                    with open(filename,"rb") as f:
+                        # Read and update hash string value in blocks of 4K
+                        for byte_block in iter(lambda: f.read(4096),b""):
+                            sha256_hash.update(byte_block)
+                        #print(f"Original file: {sha256_hash.hexdigest()}")
+                    with open(new_filename,"rb") as f2:
+                        # Read and update hash string value in blocks of 4K
+                        for byte_block in iter(lambda: f2.read(4096),b""):
+                            sha256_hash2.update(byte_block)
+                        #print(f"New file     : {sha256_hash2.hexdigest()}")
+                    if sha256_hash.hexdigest() != sha256_hash2.hexdigest():
+                        #print(f"  Checksums do not match, generating uniq name")
+                        while path.isfile(new_filename):
+                            new_filename = exif_proc.get_next_uniq_target_path(trgPath)
+                        print(f"  New uniq name found: {new_filename}")
+                    else:
+                        # Means files are identical, so instead of re-copying,
+                        # we'll move it into our special Pictures trash
+                        print(f"  Moving to trash as file already exists: {filename}")
+                        send2trash(filename)
+                        sent_to_trash = True
+                if not sent_to_trash:
+                    print(f"  FROM : {filename} --> TO: {new_filename}")
+                    shutil.move(filename, new_filename)
+                print("")
+            except NotImplementedError as nie:
+                # Just print the stack, but move on
+                print(nie)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
