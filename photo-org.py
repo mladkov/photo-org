@@ -111,6 +111,10 @@ class ExifProcessor:
         # Notice the blank between the last ':' and the '6'.
         # That means we'll just do our best instead to pull out the time
         # from the hour/minute and ignore seconds.
+
+        # Some dates come in like so: 2016-09-05_08:00:28
+        # Hence, we'll first replace '_' with spaces
+        orig_dtm = orig_dtm.replace('_', ' ')
         dtm_fields = orig_dtm.split(" ")
         theDate = dtm_fields[0]
         theTime = dtm_fields[1]
