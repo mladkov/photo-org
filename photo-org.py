@@ -78,6 +78,9 @@ class ExifProcessor:
         be copied
         """
         #print("  Available tags: {}".format(self.tags.keys()))
+        # Some dates come in like so: 2016-09-05_08:00:28
+        # Hence, we'll first replace '_' with spaces
+        self.tags["EXIF DateTimeOriginal"] = self.tags["EXIF DateTimeOriginal"].replace('_', ' ')
         origDtm  = self.tags["EXIF DateTimeOriginal"]
         print(f"EXIF DateTimeOriginal: {origDtm}")
         fmtDtm   = self._format_dtm(str(origDtm))
@@ -86,7 +89,7 @@ class ExifProcessor:
         fmtModel = self._format_model(str(model))
         baseFilename, extension = path.splitext(path.basename(self.filename))
         fmtBaseFilename = baseFilename.lower().replace(" ", "-")
-        stdFilename = f"{fmtDtm}-{fmtModel}-{fmtBaseFilename}.jpg"
+        stdFilename = f"{fmtDtm}-{fmtModel}-{fmtBaseFilename}{extension}"
         newFilename = path.join(stdPath, stdFilename)
         if not path.isdir(stdPath):
             print(f"Creating new path: {stdPath}")
@@ -101,7 +104,7 @@ class ExifProcessor:
         return next_uniq_name
         
     def _is_supported_extension(self, ext):
-        if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG'):
+        if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG', '.avi', '.MOV'):
             return True
         return False
 
@@ -111,10 +114,6 @@ class ExifProcessor:
         # Notice the blank between the last ':' and the '6'.
         # That means we'll just do our best instead to pull out the time
         # from the hour/minute and ignore seconds.
-
-        # Some dates come in like so: 2016-09-05_08:00:28
-        # Hence, we'll first replace '_' with spaces
-        orig_dtm = orig_dtm.replace('_', ' ')
         dtm_fields = orig_dtm.split(" ")
         theDate = dtm_fields[0]
         theTime = dtm_fields[1]
