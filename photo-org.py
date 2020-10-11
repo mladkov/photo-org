@@ -80,6 +80,10 @@ class ExifProcessor:
         #print("  Available tags: {}".format(self.tags.keys()))
         # Some dates come in like so: 2016-09-05_08:00:28
         # Hence, we'll first replace '_' with spaces
+        print("EXIF DateTimeOriginal before: {}".format(self.tags["EXIF DateTimeOriginal"]))
+        if type(self.tags["EXIF DateTimeOriginal"]) is exifread.classes.IfdTag:
+            print("IfdTag for date - standardizing as string")
+            self.tags["EXIF DateTimeOriginal"] = str(self.tags["EXIF DateTimeOriginal"])
         self.tags["EXIF DateTimeOriginal"] = self.tags["EXIF DateTimeOriginal"].replace('_', ' ')
         origDtm  = self.tags["EXIF DateTimeOriginal"]
         print(f"EXIF DateTimeOriginal: {origDtm}")
@@ -104,7 +108,7 @@ class ExifProcessor:
         return next_uniq_name
         
     def _is_supported_extension(self, ext):
-        if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG', '.avi', '.MOV'):
+        if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG', '.avi', '.MOV', '.AVI', '.CR2', '.NEF', '.3gp', '.AAE', '.HEIC'):
             return True
         return False
 
