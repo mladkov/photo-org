@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import hashlib
 from send2trash import send2trash
+import re
 
 HELP_MESSAGE = "./photo-org.py <source-path> <target-path>"
 DEBUG_MODE = False
@@ -81,13 +82,27 @@ class ExifProcessor:
         be copied
         """
         #print("  Available tags: {}".format(self.tags.keys()))
-        # Some dates come in like so: 2016-09-05_08:00:28
-        # Hence, we'll first replace '_' with spaces
         print("EXIF DateTimeOriginal before: {}".format(self.tags["EXIF DateTimeOriginal"]))
+
+        # When the exif reading library works on modern images, then
+        # the date is an actual object of IfdTag. We want to standardize
+        # the date type to a string
         if type(self.tags["EXIF DateTimeOriginal"]) is exifread.classes.IfdTag:
             print("IfdTag for date - standardizing as string")
             self.tags["EXIF DateTimeOriginal"] = str(self.tags["EXIF DateTimeOriginal"])
+        
+        # Some dates come in like so: 2016-09-05_08:00:28
+        # Hence, we'll first replace '_' with spaces
         self.tags["EXIF DateTimeOriginal"] = self.tags["EXIF DateTimeOriginal"].replace('_', ' ')
+
+        # If the filename itself ends with a date/time string, then
+        # we will trust THAT time instead of the one given to us by
+        # exif. This is because for some video files, exif will simply
+        # give us the current date which is NOT what we want.
+        # We use a regex with the filename to see if there's a match.
+        dtm_in_name = self._get_dtm_from_filename(self.filename)
+        if dtm_in_name is not None:
+            self.tags["EXIF DateTimeOriginal"] = dtm_in_name
         origDtm  = self.tags["EXIF DateTimeOriginal"]
         print(f"EXIF DateTimeOriginal: {origDtm}")
         fmtDtm   = self._format_dtm(str(origDtm))
@@ -102,6 +117,20 @@ class ExifProcessor:
             print(f"Creating new path: {stdPath}")
             os.makedirs(stdPath)
         return newFilename
+
+    def _get_dtm_from_filename(self, filename):
+        base_filename, ext = path.splitext(path.basename(filename))
+        # Search for the date/time which will be at the very end of
+        # the filename (not including extension)
+        x = re.search(r"\d{8}_\d{6}$", base_filename)
+        if x is not None:
+            # pull out the group, which will be the date as so
+            # '20180624_122120'
+            x = x.group()
+            # Let's add the colons etc for how we expect the date to be
+            # for the exif date, which is like so '2016:05:21 15:36:00'
+            x = "{}:{}:{} {}:{}:{}".format(x[0:4], x[4:6], x[6:8], x[9:11], x[11:13], x[13:15])
+        return x
 
     def get_next_uniq_target_path(self, target_path):
         self.uniq_id += 1
