@@ -25,6 +25,9 @@ class ExifProcessor:
         self.filename_prefix, self.extension = path.splitext(self.filename)
         if self.extension is not None and len(self.extension) != 0 and self._is_supported_extension(self.extension):
             try:
+                f = None
+                if self._mandate_exiftool_cmd(self.extension):
+                    raise ValueError("{} extension requires ExifTool".format(self.extension))
                 f = open(self.filename, 'rb')
                 self.tags = exifread.process_file(f, strict=True)
                 # It's possible Image Model is not found when we processed the exif but the rest of
@@ -67,7 +70,7 @@ class ExifProcessor:
                 print("Exception processing Exif in file [{}]: {}".format(self.filename, e))
                 raise e
             finally:
-                if not f.closed:
+                if f and not f.closed:
                     f.close()
         else:
             raise NotImplementedError("Extension of file is not supported: {}".format(self.extension))
@@ -108,7 +111,12 @@ class ExifProcessor:
         return next_uniq_name
         
     def _is_supported_extension(self, ext):
-        if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG', '.avi', '.MOV', '.AVI', '.CR2', '.NEF', '.3gp', '.AAE', '.HEIC'):
+        if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG', '.avi', '.MOV', '.AVI', '.CR2', '.NEF', '.3gp', '.AAE', '.HEIC', '.mov', '.mp4', '.mpg', '.m4v', '.MP4'):
+            return True
+        return False
+
+    def _mandate_exiftool_cmd(self, ext):
+        if ext in ('.HEIC'):
             return True
         return False
 
