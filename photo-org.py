@@ -43,18 +43,22 @@ class ExifProcessor:
                     print("  WARN: Could not find any EXIF data, using ExifTool instead!")
                     exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe', 
                         self.filename], stdout=subprocess.PIPE, encoding='UTF-8')
+                    # As we loop through, we're going to capture all the time-based tags
+                    # and later sort the list so we can visually inspect which tags we're
+                    # using most of the time.
+                    candidate_time_tags = []
                     # Manually read through line by line to get what we need
                     for line in exiftool_res.stdout.splitlines():
                         #print(f"{line}")
-                        if line.startswith('File Modification Date'):
-                            # It's the Modification Date (not create/access date) that seems correct
-                            # since create time is of the file when it was copied over. But modification
-                            # is literally when the file was manipulated in some way, so seems the most
-                            # accurate.
-
-                            # The values are aligned by the tool, and start precisely at column 34
-                            date_time = line[34:53]
-                            self.tags['EXIF DateTimeOriginal'] = date_time.strip()
+                        date_time = line[34:53]
+                        tag       = line[0:32].strip()
+                        if re.search(r"\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}", date_time) is not None:
+                            # The line we're on is a timestamp
+                            candidate_time_tags.append((tag, date_time))
+                    candidate_time_tags.sort(key=lambda tup: tup[1])
+                    print("    Candidate time tags found: {}".format(candidate_time_tags))
+                    # Pick off the oldest timestamp off the list of candidate times
+                    self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
                 f.close()
             except ValueError as ve:
                 # Value error means we couldn't even recognize values when doing the
@@ -63,10 +67,22 @@ class ExifProcessor:
                 print(f"  WARN: ValueError during parse {ve}, using ExifTool instead!")
                 exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe', 
                         self.filename], stdout=subprocess.PIPE, encoding='UTF-8')
+                # As we loop through, we're going to capture all the time-based tags
+                # and later sort the list so we can visually inspect which tags we're
+                # using most of the time.
+                candidate_time_tags = []
+                # Manually read through line by line to get what we need
                 for line in exiftool_res.stdout.splitlines():
-                    if line.startswith('File Modification Date'):
-                        date_time = line[34:53]
-                        self.tags['EXIF DateTimeOriginal'] = date_time.strip()
+                    #print(f"{line}")
+                    date_time = line[34:53]
+                    tag       = line[0:32].strip()
+                    if re.search(r"\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}", date_time) is not None:
+                        # The line we're on is a timestamp
+                        candidate_time_tags.append((tag, date_time))
+                candidate_time_tags.sort(key=lambda tup: tup[1])
+                print("    Candidate time tags found: {}".format(candidate_time_tags))
+                # Pick off the oldest timestamp off the list of candidate times
+                self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
             except Exception as e:
                 print("Exception processing Exif in file [{}]: {}".format(self.filename, e))
                 raise e
