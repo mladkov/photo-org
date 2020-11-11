@@ -58,6 +58,10 @@ class ExifProcessor:
                     candidate_time_tags.sort(key=lambda tup: tup[1])
                     if candidate_time_tags[0][0] == 'Profile Date Time':
                         print("    Removing Profile Date Time as it skews results: {}".format(candidate_time_tags.pop(0)))
+                    if candidate_time_tags[0][0] == 'GPS Date/Time':
+                        print("    Removing GPS Date/Time: {}".format(candidate_time_tags.pop(0)))
+                    while candidate_time_tags[0][1] == '0000:00:00 00:00:00' or candidate_time_tags[0][1] == '1970:01:01 00:00:00':
+                        print("    Removing bad date time of: {}".format(candidate_time_tags.pop(0)))
                     print("    Candidate time tags found: {}".format(candidate_time_tags))
                     # Pick off the oldest timestamp off the list of candidate times
                     self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
@@ -83,7 +87,11 @@ class ExifProcessor:
                         candidate_time_tags.append((tag, date_time))
                 candidate_time_tags.sort(key=lambda tup: tup[1])
                 if candidate_time_tags[0][0] == 'Profile Date Time':
-                    print("    Removing Profile Date Time as it skews results: {}".format(candidate_time_tags.pop(0)))
+                    print("    Removing Profile Date Time: {}".format(candidate_time_tags.pop(0)))
+                if candidate_time_tags[0][0] == 'GPS Date/Time':
+                    print("    Removing GPS Date/Time: {}".format(candidate_time_tags.pop(0)))
+                while candidate_time_tags[0][1] == '0000:00:00 00:00:00' or candidate_time_tags[0][1] == '1970:01:01 00:00:00':
+                    print("    Removing bad date time: {}".format(candidate_time_tags.pop(0)))
                 print("    Candidate time tags found: {}".format(candidate_time_tags))
                 # Pick off the oldest timestamp off the list of candidate times
                 self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
