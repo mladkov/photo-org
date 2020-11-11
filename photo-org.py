@@ -56,6 +56,8 @@ class ExifProcessor:
                             # The line we're on is a timestamp
                             candidate_time_tags.append((tag, date_time))
                     candidate_time_tags.sort(key=lambda tup: tup[1])
+                    if candidate_time_tags[0][0] == 'Profile Date Time':
+                        print("    Removing Profile Date Time as it skews results: {}".format(candidate_time_tags.pop(0)))
                     print("    Candidate time tags found: {}".format(candidate_time_tags))
                     # Pick off the oldest timestamp off the list of candidate times
                     self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
@@ -80,6 +82,8 @@ class ExifProcessor:
                         # The line we're on is a timestamp
                         candidate_time_tags.append((tag, date_time))
                 candidate_time_tags.sort(key=lambda tup: tup[1])
+                if candidate_time_tags[0][0] == 'Profile Date Time':
+                    print("    Removing Profile Date Time as it skews results: {}".format(candidate_time_tags.pop(0)))
                 print("    Candidate time tags found: {}".format(candidate_time_tags))
                 # Pick off the oldest timestamp off the list of candidate times
                 self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
