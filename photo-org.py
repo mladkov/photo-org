@@ -21,7 +21,7 @@ class ExifProcessor:
         self.filename = filename
         self.uniq_id  = 0
         self.tags = {}
-    
+
     def process_exif(self):
         self.filename_prefix, self.extension = path.splitext(self.filename)
         if self.extension is not None and len(self.extension) != 0 and self._is_supported_extension(self.extension):
@@ -41,7 +41,7 @@ class ExifProcessor:
                     # We couldn't get any EXIF data from the file, we have
                     # to resort using command line tool ExifTool instead
                     print("  WARN: Could not find any EXIF data, using ExifTool instead!")
-                    exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe', 
+                    exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe',
                         self.filename], stdout=subprocess.PIPE, encoding='UTF-8')
                     # As we loop through, we're going to capture all the time-based tags
                     # and later sort the list so we can visually inspect which tags we're
@@ -71,7 +71,7 @@ class ExifProcessor:
                 # parsing, so we reesort to using ExifTool
                 self.tags['Image Model'] = 'unknown'
                 print(f"  WARN: ValueError during parse {ve}, using ExifTool instead!")
-                exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe', 
+                exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe',
                         self.filename], stdout=subprocess.PIPE, encoding='UTF-8')
                 # As we loop through, we're going to capture all the time-based tags
                 # and later sort the list so we can visually inspect which tags we're
@@ -118,7 +118,7 @@ class ExifProcessor:
         if type(self.tags["EXIF DateTimeOriginal"]) is exifread.classes.IfdTag:
             print("IfdTag for date - standardizing as string")
             self.tags["EXIF DateTimeOriginal"] = str(self.tags["EXIF DateTimeOriginal"])
-        
+
         # Some dates come in like so: 2016-09-05_08:00:28
         # Hence, we'll first replace '_' with spaces
         self.tags["EXIF DateTimeOriginal"] = self.tags["EXIF DateTimeOriginal"].replace('_', ' ')
@@ -166,7 +166,7 @@ class ExifProcessor:
         base, ext = path.splitext(path.abspath(orig_trg_path))
         next_uniq_name = f"{base}-{self.uniq_id}{ext}"
         return next_uniq_name
-        
+
     def _is_supported_extension(self, ext):
         if ext in ('.jpg', '.JPG', '.jpeg', '.JPEG', '.avi', '.MOV', '.AVI', '.CR2', '.NEF', '.3gp', '.AAE', '.HEIC', '.mov', '.mp4', '.mpg', '.m4v', '.MP4'):
             return True
@@ -209,7 +209,7 @@ def main(argv):
     if path.isdir(trgPath) == False:
         print(f"ERROR: Target path must be a valid directory")
         sys.exit(1)
-    
+
     for filename in glob.iglob(srcPath + '/**/*', recursive=True):
         sent_to_trash = False
         #print(f"Listing: {filename}")
