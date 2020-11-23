@@ -25,7 +25,7 @@ def exif_matches_model(filename, camera_model):
     exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe',
                         '-model', filename], stdout=subprocess.PIPE, encoding='UTF-8')
     for line in exiftool_res.stdout.splitlines():
-        model_exif = line[34:].strip()
+        model_exif = line[34:].replace('"', '').strip()
         print(f"EXIF MODEL: {model_exif}, looking to update to {camera_model}")
         break
     return model_exif == camera_model
