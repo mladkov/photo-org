@@ -12,6 +12,8 @@ import subprocess
 import hashlib
 from send2trash import send2trash
 import re
+import pytz
+from datetime import datetime
 
 HELP_MESSAGE = "./photo-org.py <source-path> <target-path> [--gpstime]"
 DEBUG_MODE = False
@@ -66,6 +68,17 @@ class ExifProcessor:
                     print("    Candidate time tags found: {}".format(candidate_time_tags))
                     # Pick off the oldest timestamp off the list of candidate times
                     self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
+                    if candidate_time_tags[0][0] == 'GPS Date/Time':
+                        # If we are indeed using GPS time, it comes in UTC time. Generally, my camera
+                        # will be set to eastern time, so we'll convert that.
+                        est = pytz.timezone('US/Eastern')
+                        utc = pytz.utc
+                        fmt = '%Y:%m:%d %H:%M:%S'
+                        # Pull out the current time, and create datetime object in UTC
+                        c = candidate_time_tags[0][1]
+                        gps_time = datetime(int(c[0:4]), int(c[5:7]), int(c[8:10]), int(c[11:13]), int(c[14:16]), int(c[17:19]), tzinfo=utc)
+                        self.tags['EXIF DateTimeOriginal'] = gps_time.astimezone(est).strftime(fmt)
+                        print("Coverted GPS Date/Time to Eastern: {}".format(self.tags['EXIF DateTimeOriginal']))
                 f.close()
             except ValueError as ve:
                 # Value error means we couldn't even recognize values when doing the
@@ -96,6 +109,17 @@ class ExifProcessor:
                 print("    Candidate time tags found: {}".format(candidate_time_tags))
                 # Pick off the oldest timestamp off the list of candidate times
                 self.tags['EXIF DateTimeOriginal'] = candidate_time_tags[0][1]
+                if candidate_time_tags[0][0] == 'GPS Date/Time':
+                    # If we are indeed using GPS time, it comes in UTC time. Generally, my camera
+                    # will be set to eastern time, so we'll convert that.
+                    est = pytz.timezone('US/Eastern')
+                    utc = pytz.utc
+                    fmt = '%Y:%m:%d %H:%M:%S'
+                    # Pull out the current time, and create datetime object in UTC
+                    c = candidate_time_tags[0][1]
+                    gps_time = datetime(int(c[0:4]), int(c[5:7]), int(c[8:10]), int(c[11:13]), int(c[14:16]), int(c[17:19]), tzinfo=utc)
+                    self.tags['EXIF DateTimeOriginal'] = gps_time.astimezone(est).strftime(fmt)
+                    print("Coverted GPS Date/Time to Eastern: {}".format(self.tags['EXIF DateTimeOriginal']))
             except Exception as e:
                 print("Exception processing Exif in file [{}]: {}".format(self.filename, e))
                 raise e
