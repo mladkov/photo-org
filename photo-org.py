@@ -163,7 +163,9 @@ class ExifProcessor:
             # first search failed, let's try another we found on burst
             # shots from Nexus/Google phones
             # Date is embedded in filename as such: burst20160728094841
-            x = re.search(r"burst(\d{14})$", base_filename)
+            # or may have filename ending with: burst20160728094841_cover
+            # or may just have _20160728094841 so we make this regex general
+            x = re.search(r"(\d{14})(_cover)?$", base_filename)
             if x is not None:
                 y = x.group(1)
                 x = "{}:{}:{} {}:{}:{}".format(y[0:4], y[4:6], y[6:8], y[8:10], y[10:12], y[12:14])
