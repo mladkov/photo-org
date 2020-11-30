@@ -13,14 +13,15 @@ import hashlib
 from send2trash import send2trash
 import re
 
-HELP_MESSAGE = "./photo-org.py <source-path> <target-path>"
+HELP_MESSAGE = "./photo-org.py <source-path> <target-path> [--gpstime]"
 DEBUG_MODE = False
 
 class ExifProcessor:
-    def __init__(self, filename):
+    def __init__(self, filename, use_gps_time):
         self.filename = filename
         self.uniq_id  = 0
         self.tags = {}
+        self.use_gps_time = use_gps_time
 
     def process_exif(self):
         self.filename_prefix, self.extension = path.splitext(self.filename)
@@ -58,7 +59,7 @@ class ExifProcessor:
                     candidate_time_tags.sort(key=lambda tup: tup[1])
                     if candidate_time_tags[0][0] == 'Profile Date Time':
                         print("    Removing Profile Date Time as it skews results: {}".format(candidate_time_tags.pop(0)))
-                    if candidate_time_tags[0][0] == 'GPS Date/Time':
+                    if candidate_time_tags[0][0] == 'GPS Date/Time' and not self.use_gps_time:
                         print("    Removing GPS Date/Time: {}".format(candidate_time_tags.pop(0)))
                     while candidate_time_tags[0][1] == '0000:00:00 00:00:00' or candidate_time_tags[0][1] == '1970:01:01 00:00:00':
                         print("    Removing bad date time of: {}".format(candidate_time_tags.pop(0)))
@@ -88,7 +89,7 @@ class ExifProcessor:
                 candidate_time_tags.sort(key=lambda tup: tup[1])
                 if candidate_time_tags[0][0] == 'Profile Date Time':
                     print("    Removing Profile Date Time: {}".format(candidate_time_tags.pop(0)))
-                if candidate_time_tags[0][0] == 'GPS Date/Time':
+                if candidate_time_tags[0][0] == 'GPS Date/Time' and not self.use_gps_time:
                     print("    Removing GPS Date/Time: {}".format(candidate_time_tags.pop(0)))
                 while candidate_time_tags[0][1] == '0000:00:00 00:00:00' or candidate_time_tags[0][1] == '1970:01:01 00:00:00':
                     print("    Removing bad date time: {}".format(candidate_time_tags.pop(0)))
@@ -158,6 +159,14 @@ class ExifProcessor:
             # Let's add the colons etc for how we expect the date to be
             # for the exif date, which is like so '2016:05:21 15:36:00'
             x = "{}:{}:{} {}:{}:{}".format(x[0:4], x[4:6], x[6:8], x[9:11], x[11:13], x[13:15])
+        else:
+            # first search failed, let's try another we found on burst
+            # shots from Nexus/Google phones
+            # Date is embedded in filename as such: burst20160728094841
+            x = re.search(r"burst(\d{14})$", base_filename)
+            if x is not None:
+                y = x.group(1)
+                x = "{}:{}:{} {}:{}:{}".format(y[0:4], y[4:6], y[6:8], y[8:10], y[10:12], y[12:14])
         return x
 
     def get_next_uniq_target_path(self, target_path):
@@ -202,6 +211,10 @@ class ExifProcessor:
 def main(argv):
     srcPath = argv[1]
     trgPath = argv[2]
+    use_gps_time = False
+    if len(argv) == 4 and argv[3] == "--gpstime":
+        use_gps_time = True
+
     print(f"Source Path: {srcPath}\nTarget Path: {trgPath}")
     if not path.isdir(srcPath):
         print(f"ERROR: Source path must be a valid directory")
@@ -216,7 +229,7 @@ def main(argv):
         if not path.isdir(filename):
             # Only try processing items that are NOT directories (ie. files!)
             print("Found file: {}".format(filename))
-            exif_proc = ExifProcessor(filename)
+            exif_proc = ExifProcessor(filename, use_gps_time)
             try:
                 exif_proc.process_exif()
                 new_filename = exif_proc.get_target_path(trgPath)
@@ -255,7 +268,7 @@ def main(argv):
                 print(nie)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 3 and len(sys.argv) != 4:
         print(f"{HELP_MESSAGE}  num args = {len(sys.argv)}")
         sys.exit(1)
     main(sys.argv)
