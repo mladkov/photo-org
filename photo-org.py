@@ -78,7 +78,7 @@ class ExifProcessor:
                         c = candidate_time_tags[0][1]
                         gps_time = datetime(int(c[0:4]), int(c[5:7]), int(c[8:10]), int(c[11:13]), int(c[14:16]), int(c[17:19]), tzinfo=utc)
                         self.tags['EXIF DateTimeOriginal'] = gps_time.astimezone(est).strftime(fmt)
-                        print("Coverted GPS Date/Time to Eastern: {}".format(self.tags['EXIF DateTimeOriginal']))
+                        print("Converted GPS Date/Time to Eastern: {}".format(self.tags['EXIF DateTimeOriginal']))
                 f.close()
             except ValueError as ve:
                 # Value error means we couldn't even recognize values when doing the
@@ -119,7 +119,7 @@ class ExifProcessor:
                     c = candidate_time_tags[0][1]
                     gps_time = datetime(int(c[0:4]), int(c[5:7]), int(c[8:10]), int(c[11:13]), int(c[14:16]), int(c[17:19]), tzinfo=utc)
                     self.tags['EXIF DateTimeOriginal'] = gps_time.astimezone(est).strftime(fmt)
-                    print("Coverted GPS Date/Time to Eastern: {}".format(self.tags['EXIF DateTimeOriginal']))
+                    print("Converted GPS Date/Time to Eastern: {}".format(self.tags['EXIF DateTimeOriginal']))
             except Exception as e:
                 print("Exception processing Exif in file [{}]: {}".format(self.filename, e))
                 raise e
