@@ -14,6 +14,7 @@ from send2trash import send2trash
 import re
 
 HELP_MESSAGE = "./clean-dups.py <path> [DELETE]"
+FILE_SIZE_THREASHOLD_BYTES = 500 * 1024
 
 def main(argv):
     thePath = argv[1]
@@ -38,6 +39,15 @@ def main(argv):
                     send2trash(filename)
                 else:
                     print("Candidate file for trash: {} with extension {}".format(filename_prefix, extension))
+            else:
+                file_stats = os.stat(filename)
+                file_size_bytes = file_stats.st_size
+                if file_size_bytes < FILE_SIZE_THREASHOLD_BYTES:
+                    if send_to_trash:
+                        print("Sending to trash: {} with extension {} and size {} bytes (threshold: {} bytes)".format(filename_prefix, extension, file_size_bytes, FILE_SIZE_THREASHOLD_BYTES))
+                        send2trash(filename)
+                    else:
+                        print("Candidate file for trash: {} with extension {} and size {} bytes (threshold: {} bytes)".format(filename_prefix, extension, file_size_bytes, FILE_SIZE_THREASHOLD_BYTES))
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 and len(sys.argv) != 3:
