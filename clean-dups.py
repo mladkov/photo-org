@@ -14,7 +14,7 @@ from send2trash import send2trash
 import re
 
 HELP_MESSAGE = "./clean-dups.py <path> [DELETE]"
-FILE_SIZE_THREASHOLD_BYTES = 500 * 1024
+FILE_SIZE_THREASHOLD_BYTES = 300 * 1024
 
 def main(argv):
     thePath = argv[1]
