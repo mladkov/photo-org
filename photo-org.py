@@ -17,6 +17,7 @@ from datetime import datetime
 
 HELP_MESSAGE = "./photo-org.py <source-path> <target-path> [--gpstime]"
 DEBUG_MODE = False
+DEFAULT_CAMERA = "nikon-z-6_2"
 
 class ExifProcessor:
     def __init__(self, filename, use_gps_time):
@@ -38,7 +39,7 @@ class ExifProcessor:
                 # EXIF data is useable. In which case, let's just set the Image Model to 'unknown'
                 # which becomes part of the filename.
                 if self.tags.get('Image Model') is None:
-                    self.tags['Image Model'] = 'unknown'
+                    self.tags['Image Model'] = DEFAULT_CAMERA
                 #print(f"Tags: {self.tags}")
                 if len(self.tags) == 0 or self.tags.get('EXIF DateTimeOriginal') is None:
                     # We couldn't get any EXIF data from the file, we have
@@ -83,7 +84,7 @@ class ExifProcessor:
             except ValueError as ve:
                 # Value error means we couldn't even recognize values when doing the
                 # parsing, so we reesort to using ExifTool
-                self.tags['Image Model'] = 'unknown'
+                self.tags['Image Model'] = DEFAULT_CAMERA
                 print(f"  WARN: ValueError during parse {ve}, using ExifTool instead!")
                 exiftool_res = subprocess.run([r'c:\Users\Family\Downloads\exiftool-12.05\exiftool.exe',
                         self.filename], stdout=subprocess.PIPE, encoding='UTF-8')
